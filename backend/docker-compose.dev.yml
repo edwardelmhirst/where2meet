@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: where2meet-api-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./run.py:/app/run.py
+      - ./.env:/app/.env
+    environment:
+      - APP_NAME=Where2Meet API
+      - APP_VERSION=0.1.0
+      - DEBUG=true
+      - PORT=8000
+      - HOST=0.0.0.0
+      - FRONTEND_URL=http://localhost:3000
+      - GEOCODER_USER_AGENT=where2meet_api_dev
+    restart: unless-stopped
+    networks:
+      - where2meet-network
+
+networks:
+  where2meet-network:
+    driver: bridge

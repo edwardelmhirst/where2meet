@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: where2meet-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Where2Meet API
+      - APP_VERSION=0.1.0
+      - DEBUG=false
+      - PORT=8000
+      - HOST=0.0.0.0
+      - FRONTEND_URL=http://localhost:3000
+      - GEOCODER_USER_AGENT=where2meet_api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - where2meet-network
+
+  # For future Supabase integration
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: where2meet-db
+  #   environment:
+  #     POSTGRES_USER: where2meet
+  #     POSTGRES_PASSWORD: where2meet_secret
+  #     POSTGRES_DB: where2meet
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - where2meet-network
+
+networks:
+  where2meet-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
