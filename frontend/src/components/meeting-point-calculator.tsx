@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingOverlay } from '@/components/loading-spinner'
 import { api, LocationInput, MeetingPointResponse } from '@/lib/api'
-import { Plus, Trash2, MapPin, Clock, Users } from 'lucide-react'
+import { Plus, Trash2, MapPin, Clock, Users, TrendingUp, Zap, Award, ArrowRight } from 'lucide-react'
 
 export function MeetingPointCalculator() {
   const [locations, setLocations] = useState<LocationInput[]>([
@@ -65,160 +65,207 @@ export function MeetingPointCalculator() {
       {isLoading && <LoadingOverlay />}
       
       <div className="max-w-6xl mx-auto space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Find Your Perfect Meeting Point
+        <Card className="overflow-hidden border-0 shadow-2xl hover-lift">
+          <div className="h-2 gradient-primary" />
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 rounded-lg gradient-primary">
+                <MapPin className="h-5 w-5 text-white" />
+              </div>
+              Calculate Your Meeting Point
             </CardTitle>
-            <CardDescription>
-              Enter the locations of all participants to find the most convenient meeting spot in London
+            <CardDescription className="text-base">
+              Enter each person&apos;s starting location and we&apos;ll find the fairest spot for everyone
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               {locations.map((location, index) => (
-                <div key={index} className="flex gap-4 items-end">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`name-${index}`}>
-                        Person {index + 1} Name
-                      </Label>
-                      <Input
-                        id={`name-${index}`}
-                        placeholder="e.g., Alice"
-                        value={location.name}
-                        onChange={(e) => handleLocationChange(index, 'name', e.target.value)}
-                      />
+                <div key={index} className="group relative">
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-shrink-0 mt-8">
+                      <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-semibold shadow-lg">
+                        {index + 1}
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`address-${index}`}>
-                        Address or Station
-                      </Label>
-                      <Input
-                        id={`address-${index}`}
-                        placeholder="e.g., Victoria Station, London"
-                        value={location.address || ''}
-                        onChange={(e) => handleLocationChange(index, 'address', e.target.value)}
-                      />
+                    <div className="flex-1 flex gap-4 items-end p-4 rounded-xl bg-gradient-to-r from-purple-50/50 to-blue-50/50 border border-purple-100 hover:border-purple-200 transition-all">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`name-${index}`} className="text-sm font-medium text-gray-700">
+                          Person {index + 1} Name
+                        </Label>
+                        <Input
+                          id={`name-${index}`}
+                          placeholder="e.g., Alice"
+                          value={location.name}
+                          onChange={(e) => handleLocationChange(index, 'name', e.target.value)}
+                          className="border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`address-${index}`} className="text-sm font-medium text-gray-700">
+                          Address or Station
+                        </Label>
+                        <Input
+                          id={`address-${index}`}
+                          placeholder="e.g., Victoria Station, London"
+                          value={location.address || ''}
+                          onChange={(e) => handleLocationChange(index, 'address', e.target.value)}
+                          className="border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveLocation(index)}
+                      disabled={locations.length <= 2}
+                      className="hover:bg-red-100 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveLocation(index)}
-                    disabled={locations.length <= 2}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               ))}
             </div>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                <span className="text-red-500">⚠️</span>
                 {error}
               </div>
             )}
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4">
               <Button
                 variant="outline"
                 onClick={handleAddLocation}
                 disabled={locations.length >= 10}
+                className="border-purple-200 hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-500 hover:text-white hover:border-transparent transition-all"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Person
               </Button>
-              <Button onClick={handleCalculate} className="flex-1 md:flex-initial">
-                Calculate Meeting Point
+              <Button 
+                onClick={handleCalculate} 
+                className="flex-1 md:flex-initial gradient-primary text-white hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
+              >
+                <Zap className="mr-2 h-4 w-4" />
+                Find Meeting Point
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
         </Card>
 
         {result && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Optimal Meeting Point: {result.optimal_station.station_name}
-              </CardTitle>
-              <CardDescription>
-                Based on journey times from all participants
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Clock className="h-4 w-4" />
-                      Average Journey Time
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {Math.round(result.optimal_station.average_journey_time)} min
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Users className="h-4 w-4" />
-                      Max Journey Time
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {Math.round(result.optimal_station.max_journey_time)} min
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4" />
-                      Fairness Score
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {result.optimal_station.fairness_score.toFixed(1)}/10
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Journey Times</h3>
-                <div className="space-y-2">
-                  {result.optimal_station.journey_times.map((journey, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                      <span className="font-medium">{journey.from_location}</span>
-                      <span className="text-muted-foreground">
-                        {journey.duration_minutes} minutes
-                      </span>
-                    </div>
-                  ))}
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="overflow-hidden border-0 shadow-2xl">
+              <div className="h-1 gradient-primary" />
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-purple-600 mb-2">
+                  <Award className="h-4 w-4" />
+                  OPTIMAL LOCATION FOUND
                 </div>
-              </div>
+                <CardTitle className="text-3xl flex items-center gap-3">
+                  <div className="p-3 rounded-xl gradient-primary shadow-lg">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  {result.optimal_station.station_name}
+                </CardTitle>
+                <CardDescription className="text-base">
+                  The fairest meeting point based on everyone&apos;s journey times
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="border-0 bg-gradient-to-br from-purple-50 to-purple-100 hover-lift">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-2 text-sm text-purple-700 mb-2">
+                        <Clock className="h-4 w-4" />
+                        Average Journey
+                      </div>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {Math.round(result.optimal_station.average_journey_time)} min
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100 hover-lift">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-2 text-sm text-blue-700 mb-2">
+                        <Users className="h-4 w-4" />
+                        Longest Journey
+                      </div>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {Math.round(result.optimal_station.max_journey_time)} min
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 bg-gradient-to-br from-pink-50 to-pink-100 hover-lift">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-2 text-sm text-pink-700 mb-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Fairness Score
+                      </div>
+                      <p className="text-3xl font-bold text-pink-900">
+                        {result.optimal_station.fairness_score.toFixed(1)}/10
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              {result.alternative_stations.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Alternative Stations</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {result.alternative_stations.slice(0, 3).map((station, index) => (
-                      <Card key={index}>
-                        <CardContent className="pt-4">
-                          <h4 className="font-medium mb-2">{station.station_name}</h4>
-                          <div className="space-y-1 text-sm text-muted-foreground">
-                            <p>Avg: {Math.round(station.average_journey_time)} min</p>
-                            <p>Max: {Math.round(station.max_journey_time)} min</p>
-                            <p>Score: {station.fairness_score.toFixed(1)}/10</p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-purple-600" />
+                    Individual Journey Times
+                  </h3>
+                  <div className="space-y-3">
+                    {result.optimal_station.journey_times.map((journey, index) => (
+                      <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-purple-50/50 to-blue-50/50 border border-purple-100 hover:border-purple-200 transition-all hover-lift">
+                        <span className="font-medium text-gray-700">{journey.from_location}</span>
+                        <span className="text-purple-600 font-semibold">
+                          {journey.duration_minutes} minutes
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {result.alternative_stations.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-purple-600" />
+                      Alternative Stations
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {result.alternative_stations.slice(0, 3).map((station, index) => (
+                        <Card key={index} className="border border-purple-100 hover:border-purple-300 transition-all hover-lift">
+                          <CardContent className="pt-4">
+                            <h4 className="font-semibold text-lg mb-3 text-gray-800">{station.station_name}</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Average:</span>
+                                <span className="font-medium text-purple-600">{Math.round(station.average_journey_time)} min</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Maximum:</span>
+                                <span className="font-medium text-blue-600">{Math.round(station.max_journey_time)} min</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Score:</span>
+                                <span className="font-medium text-pink-600">{station.fairness_score.toFixed(1)}/10</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </>
