@@ -62,51 +62,148 @@ class MeetingCalculator:
         locations: List[ProcessedLocation],
         use_tfl_api: bool = True
     ) -> Tuple[MeetingStation, List[MeetingStation]]:
-        results = []
+        import asyncio
+        from geopy.distance import geodesic
         
+        # First, quickly estimate distances to find best candidates
+        candidates = []
         for station_name, (station_lat, station_lon) in LONDON_STATIONS.items():
-            total_time = 0
-            max_time = 0
-            journey_times = []
+            total_distance = 0
+            max_distance = 0
             
             for loc in locations:
-                if use_tfl_api:
-                    duration = await self.tfl_service.get_journey_time(
+                distance = geodesic(
+                    (loc.latitude, loc.longitude),
+                    (station_lat, station_lon)
+                ).km
+                total_distance += distance
+                max_distance = max(max_distance, distance)
+            
+            avg_distance = total_distance / len(locations)
+            candidates.append({
+                'name': station_name,
+                'coords': (station_lat, station_lon),
+                'avg_distance': avg_distance,
+                'max_distance': max_distance
+            })
+        
+        # Sort by average distance and take top 7 candidates
+        candidates.sort(key=lambda x: x['avg_distance'])
+        top_candidates = candidates[:7]
+        
+        if use_tfl_api:
+            # Prepare ALL API calls at once (all stations × all locations)
+            all_tasks = []
+            task_mapping = []  # Keep track of which task belongs to which station/location
+            
+            for candidate in top_candidates:
+                station_name = candidate['name']
+                station_lat, station_lon = candidate['coords']
+                
+                for loc in locations:
+                    task = self.tfl_service.get_journey_time(
                         loc.latitude, loc.longitude,
                         station_lat, station_lon
                     )
-                else:
+                    all_tasks.append(task)
+                    task_mapping.append({
+                        'station_name': station_name,
+                        'station_coords': (station_lat, station_lon),
+                        'location_name': loc.name
+                    })
+            
+            # Execute ALL API calls in parallel at once
+            logger.info(f"Making {len(all_tasks)} TfL API calls in parallel...")
+            all_results = await asyncio.gather(*all_tasks)
+            
+            # Now organize results by station
+            station_data = {}
+            for mapping, duration in zip(task_mapping, all_results):
+                station_name = mapping['station_name']
+                if station_name not in station_data:
+                    station_data[station_name] = {
+                        'coords': mapping['station_coords'],
+                        'journeys': []
+                    }
+                station_data[station_name]['journeys'].append({
+                    'from': mapping['location_name'],
+                    'duration': duration
+                })
+            
+            # Build station results from organized data
+            results = []
+            for station_name, data in station_data.items():
+                station_lat, station_lon = data['coords']
+                journey_times = []
+                total_time = 0
+                max_time = 0
+                
+                for journey in data['journeys']:
+                    duration = journey['duration']
+                    total_time += duration
+                    max_time = max(max_time, duration)
+                    journey_times.append(JourneyTime(
+                        from_location=journey['from'],
+                        to_station=station_name,
+                        duration_minutes=duration,
+                        route_type="public_transport"
+                    ))
+                
+                avg_time = total_time / len(locations) if locations else 0
+                min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
+                fairness_score = max_time - min_time
+                
+                station = MeetingStation(
+                    station_name=station_name,
+                    latitude=station_lat,
+                    longitude=station_lon,
+                    average_journey_time=avg_time,
+                    max_journey_time=max_time,
+                    total_journey_time=total_time,
+                    fairness_score=fairness_score,
+                    journey_times=journey_times
+                )
+                results.append(station)
+        else:
+            # Use distance estimates for all candidates
+            results = []
+            for candidate in top_candidates:
+                station_name = candidate['name']
+                station_lat, station_lon = candidate['coords']
+                
+                journey_times = []
+                total_time = 0
+                max_time = 0
+                
+                for loc in locations:
                     duration = self.tfl_service._estimate_journey_time(
                         loc.latitude, loc.longitude,
                         station_lat, station_lon
                     )
+                    total_time += duration
+                    max_time = max(max_time, duration)
+                    journey_times.append(JourneyTime(
+                        from_location=loc.name,
+                        to_station=station_name,
+                        duration_minutes=duration,
+                        route_type="public_transport"
+                    ))
                 
-                total_time += duration
-                max_time = max(max_time, duration)
+                avg_time = total_time / len(locations) if locations else 0
+                min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
+                fairness_score = max_time - min_time
                 
-                journey_times.append(JourneyTime(
-                    from_location=loc.name,
-                    to_station=station_name,
-                    duration_minutes=duration,
-                    route_type="public_transport"
-                ))
-            
-            avg_time = total_time / len(locations) if locations else 0
-            min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
-            fairness_score = max_time - min_time
-            
-            station = MeetingStation(
-                station_name=station_name,
-                latitude=station_lat,
-                longitude=station_lon,
-                average_journey_time=avg_time,
-                max_journey_time=max_time,
-                total_journey_time=total_time,
-                fairness_score=fairness_score,
-                journey_times=journey_times
-            )
-            
-            results.append(station)
+                station = MeetingStation(
+                    station_name=station_name,
+                    latitude=station_lat,
+                    longitude=station_lon,
+                    average_journey_time=avg_time,
+                    max_journey_time=max_time,
+                    total_journey_time=total_time,
+                    fairness_score=fairness_score,
+                    journey_times=journey_times
+                )
+                results.append(station)
         
         results.sort(key=lambda x: (x.average_journey_time, x.fairness_score))
         
