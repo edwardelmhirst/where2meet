@@ -118,6 +118,52 @@ export function MeetingMap({ result }: MeetingMapProps) {
     '#8b5cf6', // violet
   ]
 
+  // Different map tile options - all clean and minimal
+  const mapTiles = {
+    light: {
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    voyager: {
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    positron: {
+      url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    dark: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    darkNoLabels: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    toner: {
+      url: 'https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+    },
+    tonerBackground: {
+      url: 'https://tiles.stadiamaps.com/tiles/stamen_toner_background/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+    },
+    watercolor: {
+      url: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg',
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+    },
+    alidade: {
+      url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+    },
+    alidadeDark: {
+      url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+    }
+  }
+
+  const selectedTile = mapTiles.alidade // Using watercolor for an artistic, unique look
+
   const mapCenter = result.map_center as [number, number]
   const optimalStation = result.optimal_station
 
@@ -181,9 +227,9 @@ export function MeetingMap({ result }: MeetingMapProps) {
         className="z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          opacity={0.9}
+          attribution={selectedTile.attribution}
+          url={selectedTile.url}
+          opacity={1}
         />
         
         {/* Meeting point marker */}
