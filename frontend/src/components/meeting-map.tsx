@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import React, { useEffect, useMemo } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MeetingPointResponse } from '@/lib/api'
@@ -114,6 +114,20 @@ const generateRoutePoints = (start: [number, number], end: [number, number]): [n
   return points
 }
 
+// Component to auto-fit bounds
+function AutoFitBounds({ locations }: { locations: [number, number][] }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    if (locations.length > 0) {
+      const bounds = L.latLngBounds(locations.map(loc => L.latLng(loc[0], loc[1])))
+      map.fitBounds(bounds, { padding: [50, 50] })
+    }
+  }, [map, locations])
+  
+  return null
+}
+
 export function MeetingMap({ result }: MeetingMapProps) {
   const colors = [
     '#a855f7', // purple
@@ -186,6 +200,15 @@ export function MeetingMap({ result }: MeetingMapProps) {
     journeyTime: result.optimal_station.journey_times[index]?.duration_minutes || 0,
   }))
 
+  // Collect all marker positions for auto-fitting bounds
+  const allMarkerPositions = useMemo(() => {
+    const positions: [number, number][] = [
+      [optimalStation.latitude, optimalStation.longitude], // Meeting point
+      ...routes.map(route => route.from) // All starting locations
+    ]
+    return positions
+  }, [optimalStation, routes])
+
   useEffect(() => {
     // Add custom styles for the map after component mounts
     if (typeof window !== 'undefined' && document.head) {
@@ -236,6 +259,7 @@ export function MeetingMap({ result }: MeetingMapProps) {
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >
+        <AutoFitBounds locations={allMarkerPositions} />
         <TileLayer
           attribution={selectedTile.attribution}
           url={selectedTile.url}
