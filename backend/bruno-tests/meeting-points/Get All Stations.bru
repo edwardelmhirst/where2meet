@@ -1,0 +1,38 @@
+meta {
+  name: Get All Stations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}{{apiPrefix}}/meeting-points/stations
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.total: gte 20
+}
+
+tests {
+  test("Returns list of stations", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.stations).to.be.an("array");
+    expect(res.body.stations.length).to.be.greaterThan(20);
+  });
+  
+  test("Each station has required fields", function() {
+    const firstStation = res.body.stations[0];
+    expect(firstStation).to.have.property("name");
+    expect(firstStation).to.have.property("latitude");
+    expect(firstStation).to.have.property("longitude");
+  });
+  
+  test("Contains expected stations", function() {
+    const stationNames = res.body.stations.map(s => s.name);
+    expect(stationNames).to.include("Oxford Circus");
+    expect(stationNames).to.include("Victoria");
+    expect(stationNames).to.include("King's Cross St. Pancras");
+  });
+}

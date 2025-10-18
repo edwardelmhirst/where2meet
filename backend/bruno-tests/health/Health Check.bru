@@ -1,0 +1,30 @@
+meta {
+  name: Health Check
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}{{apiPrefix}}/health/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq healthy
+  res.body.service: eq "Where2Meet API"
+}
+
+tests {
+  test("Health check returns healthy status", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.status).to.equal("healthy");
+  });
+  
+  test("Response contains required fields", function() {
+    expect(res.body).to.have.property("timestamp");
+    expect(res.body).to.have.property("service");
+    expect(res.body).to.have.property("version");
+  });
+}

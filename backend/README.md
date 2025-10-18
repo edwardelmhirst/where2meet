@@ -2,30 +2,27 @@
 
 FastAPI backend service for the Where2Meet application - finding optimal meeting points in London using TfL journey data.
 
-## Setup
+## Quick Start
 
-1. Create virtual environment:
+### Using Make (Recommended)
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Complete setup and run
+make quick-start
+
+# Or with Docker
+make quick-docker
 ```
 
-2. Install dependencies:
+### Manual Setup
 ```bash
-pip install -r requirements.txt
-```
+# Setup environment
+make setup
 
-3. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+# Run locally
+make run
 
-4. Run the server:
-```bash
-python run.py
-# or
-uvicorn app.main:app --reload
+# Run with Docker
+make docker-up
 ```
 
 ## API Documentation
@@ -69,9 +66,46 @@ Request body:
 
 ## Testing
 
+### Unit Tests
 ```bash
-pytest tests/
+make test
 ```
+
+### API Tests with Bruno
+```bash
+# Install Bruno CLI
+npm install -g @usebruno/cli
+
+# Run tests
+make bruno-test
+```
+
+## Docker
+
+### Build and Run
+```bash
+# Production
+make docker-build
+make docker-up
+
+# Development (with hot reload)
+make docker-dev
+
+# View logs
+make docker-logs
+```
+
+## Available Make Commands
+
+Run `make help` to see all available commands:
+- `make setup` - Complete project setup
+- `make run` - Run API locally
+- `make dev` - Run with auto-reload
+- `make test` - Run tests
+- `make docker-up` - Start with Docker
+- `make docker-dev` - Start development Docker
+- `make bruno-test` - Run API tests
+- `make clean` - Clean cache files
 
 ## Next Steps
 

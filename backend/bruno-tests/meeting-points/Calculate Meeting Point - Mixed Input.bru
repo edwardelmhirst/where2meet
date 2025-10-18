@@ -1,0 +1,60 @@
+meta {
+  name: Calculate Meeting Point - Mixed Input
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}{{apiPrefix}}/meeting-points/calculate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "locations": [
+      {
+        "name": "Alice",
+        "address": "Victoria Station, London"
+      },
+      {
+        "name": "Bob",
+        "latitude": 51.5308,
+        "longitude": -0.1238
+      },
+      {
+        "name": "Charlie",
+        "address": "Canary Wharf, London"
+      }
+    ],
+    "use_tfl_api": false
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.processed_locations.length: eq 3
+}
+
+tests {
+  test("Handles mixed input types", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.processed_locations).to.have.lengthOf(3);
+  });
+  
+  test("Calculates fairness score", function() {
+    const optimal = res.body.optimal_station;
+    expect(optimal.fairness_score).to.be.a("number");
+    expect(optimal.fairness_score).to.be.at.least(0);
+  });
+  
+  test("Returns alternative stations", function() {
+    expect(res.body.alternative_stations).to.be.an("array");
+    expect(res.body.alternative_stations.length).to.be.at.most(5);
+    
+    if (res.body.alternative_stations.length > 0) {
+      const first = res.body.alternative_stations[0];
+      expect(first.average_journey_time).to.be.at.least(res.body.optimal_station.average_journey_time);
+    }
+  });
+}

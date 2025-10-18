@@ -1,0 +1,32 @@
+meta {
+  name: Geocode Address
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}{{apiPrefix}}/meeting-points/geocode?address=Victoria Station, London
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.latitude: isNumber
+  res.body.longitude: isNumber
+}
+
+tests {
+  test("Successfully geocodes address", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.address).to.equal("Victoria Station, London");
+    expect(res.body.latitude).to.be.a("number");
+    expect(res.body.longitude).to.be.a("number");
+  });
+  
+  test("Returns valid London coordinates", function() {
+    // Victoria Station approximate coordinates
+    expect(res.body.latitude).to.be.closeTo(51.495, 0.01);
+    expect(res.body.longitude).to.be.closeTo(-0.144, 0.01);
+  });
+}

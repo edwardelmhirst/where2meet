@@ -1,0 +1,29 @@
+meta {
+  name: Readiness Check
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}{{apiPrefix}}/health/ready
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.ready: eq true
+}
+
+tests {
+  test("Service is ready", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.ready).to.equal(true);
+  });
+  
+  test("All subsystems are ready", function() {
+    expect(res.body.checks.api).to.equal(true);
+    expect(res.body.checks.geocoding).to.equal(true);
+    expect(res.body.checks.tfl_integration).to.equal(true);
+  });
+}

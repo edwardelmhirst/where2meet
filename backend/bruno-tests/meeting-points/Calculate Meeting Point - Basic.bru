@@ -1,0 +1,60 @@
+meta {
+  name: Calculate Meeting Point - Basic
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}{{apiPrefix}}/meeting-points/calculate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "locations": [
+      {
+        "name": "Alice",
+        "address": "Victoria Station, London"
+      },
+      {
+        "name": "Bob",
+        "address": "King's Cross Station, London"
+      }
+    ],
+    "use_tfl_api": false
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.optimal_station: isJson
+  res.body.processed_locations: isArray
+}
+
+tests {
+  test("Successfully calculates meeting point", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property("request_id");
+    expect(res.body).to.have.property("optimal_station");
+    expect(res.body).to.have.property("alternative_stations");
+  });
+  
+  test("Returns processed locations", function() {
+    expect(res.body.processed_locations).to.be.an("array");
+    expect(res.body.processed_locations).to.have.lengthOf(2);
+    
+    const alice = res.body.processed_locations.find(l => l.name === "Alice");
+    expect(alice).to.exist;
+    expect(alice.latitude).to.be.a("number");
+    expect(alice.longitude).to.be.a("number");
+  });
+  
+  test("Optimal station has journey times", function() {
+    const optimal = res.body.optimal_station;
+    expect(optimal.station_name).to.be.a("string");
+    expect(optimal.average_journey_time).to.be.a("number");
+    expect(optimal.journey_times).to.be.an("array");
+    expect(optimal.journey_times).to.have.lengthOf(2);
+  });
+}

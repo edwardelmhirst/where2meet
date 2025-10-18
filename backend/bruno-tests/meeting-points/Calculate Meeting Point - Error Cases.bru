@@ -1,0 +1,60 @@
+meta {
+  name: Calculate Meeting Point - Error Cases
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}{{apiPrefix}}/meeting-points/calculate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "locations": [
+      {
+        "name": "Only One Person",
+        "address": "Victoria Station, London"
+      }
+    ],
+    "use_tfl_api": false
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("Rejects single location", function() {
+    expect(res.status).to.equal(400);
+    expect(res.body.detail).to.exist;
+  });
+}
+
+script:post-response {
+  // Test with invalid location
+  const invalidLocationRequest = {
+    url: bru.getEnvVar("baseUrl") + bru.getEnvVar("apiPrefix") + "/meeting-points/calculate",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      "locations": [
+        {
+          "name": "Alice",
+          "address": "Nonexistent Place XYZ123"
+        },
+        {
+          "name": "Bob",
+          "address": "Victoria Station, London"
+        }
+      ],
+      "use_tfl_api": false
+    })
+  };
+  
+  // Note: This would need to be run separately as Bruno doesn't support multiple requests in one test
+}
