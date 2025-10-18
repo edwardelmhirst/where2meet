@@ -25,11 +25,29 @@ class ProcessedLocation(BaseModel):
     longitude: float
 
 
+class JourneyLeg(BaseModel):
+    mode: str  # tube, bus, walking, etc.
+    from_name: str
+    to_name: str
+    from_coords: Tuple[float, float]  # lat, lon
+    to_coords: Tuple[float, float]
+    duration: int  # minutes
+    distance: Optional[int] = None  # meters
+    line_name: Optional[str] = None  # e.g., "Victoria", "Northern"
+    direction: Optional[str] = None
+    stops: Optional[int] = None  # number of stops
+    instruction: str  # e.g., "Take Victoria line towards Brixton"
+
 class JourneyTime(BaseModel):
     from_location: str
     to_station: str
     duration_minutes: int
     route_type: str = "public_transport"
+    departure_time: Optional[datetime] = None
+    arrival_time: Optional[datetime] = None
+    legs: List[JourneyLeg] = []
+    total_walking_duration: int = 0
+    total_transfers: int = 0
 
 
 class MeetingStation(BaseModel):

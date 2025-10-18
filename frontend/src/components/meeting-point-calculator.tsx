@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingOverlay } from '@/components/loading-spinner'
+import { JourneyDetails } from '@/components/journey-details'
 import { api, LocationInput, MeetingPointResponse } from '@/lib/api'
 import { Plus, Trash2, MapPin, Clock, Users, TrendingUp, Zap, Award, ArrowRight, Map } from 'lucide-react'
 
@@ -287,22 +288,10 @@ export function MeetingPointCalculator() {
                   </Card>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-purple-600" />
-                    Individual Journey Times
-                  </h3>
-                  <div className="space-y-3">
-                    {result.optimal_station.journey_times.map((journey, index) => (
-                      <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-purple-50/50 to-blue-50/50 border border-purple-100 hover:border-purple-200 transition-all hover-lift">
-                        <span className="font-medium text-gray-700">{journey.from_location}</span>
-                        <span className="text-purple-600 font-semibold">
-                          {journey.duration_minutes} minutes
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <JourneyDetails 
+                  journeys={result.optimal_station.journey_times} 
+                  colors={colors}
+                />
 
                 {result.alternative_stations.length > 0 && (
                   <div className="space-y-4">

@@ -7,6 +7,32 @@ export interface LocationInput {
   longitude?: number
 }
 
+export interface JourneyLeg {
+  mode: string
+  from_name: string
+  to_name: string
+  from_coords: [number, number]
+  to_coords: [number, number]
+  duration: number
+  distance?: number
+  line_name?: string
+  direction?: string
+  stops?: number
+  instruction: string
+}
+
+export interface JourneyDetail {
+  from_location: string
+  to_station: string
+  duration_minutes: number
+  route_type: string
+  departure_time?: string
+  arrival_time?: string
+  legs: JourneyLeg[]
+  total_walking_duration: number
+  total_transfers: number
+}
+
 export interface MeetingStation {
   station_name: string
   latitude: number
@@ -15,12 +41,7 @@ export interface MeetingStation {
   max_journey_time: number
   total_journey_time: number
   fairness_score: number
-  journey_times: Array<{
-    from_location: string
-    to_station: string
-    duration_minutes: number
-    route_type: string
-  }>
+  journey_times: JourneyDetail[]
 }
 
 export interface MeetingPointRequest {

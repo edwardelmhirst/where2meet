@@ -101,15 +101,18 @@ class MeetingCalculator:
                 station_lat, station_lon = candidate['coords']
                 
                 for loc in locations:
-                    task = self.tfl_service.get_journey_time(
+                    task = self.tfl_service.get_journey_details(
                         loc.latitude, loc.longitude,
-                        station_lat, station_lon
+                        station_lat, station_lon,
+                        loc.name,
+                        station_name
                     )
                     all_tasks.append(task)
                     task_mapping.append({
                         'station_name': station_name,
                         'station_coords': (station_lat, station_lon),
-                        'location_name': loc.name
+                        'location_name': loc.name,
+                        'location': loc
                     })
             
             # Execute ALL API calls in parallel at once
@@ -118,36 +121,27 @@ class MeetingCalculator:
             
             # Now organize results by station
             station_data = {}
-            for mapping, duration in zip(task_mapping, all_results):
+            for mapping, journey_detail in zip(task_mapping, all_results):
                 station_name = mapping['station_name']
                 if station_name not in station_data:
                     station_data[station_name] = {
                         'coords': mapping['station_coords'],
                         'journeys': []
                     }
-                station_data[station_name]['journeys'].append({
-                    'from': mapping['location_name'],
-                    'duration': duration
-                })
+                station_data[station_name]['journeys'].append(journey_detail)
             
             # Build station results from organized data
             results = []
             for station_name, data in station_data.items():
                 station_lat, station_lon = data['coords']
-                journey_times = []
+                journey_times = data['journeys']  # These are already JourneyTime objects with details
                 total_time = 0
                 max_time = 0
                 
-                for journey in data['journeys']:
-                    duration = journey['duration']
+                for journey in journey_times:
+                    duration = journey.duration_minutes
                     total_time += duration
                     max_time = max(max_time, duration)
-                    journey_times.append(JourneyTime(
-                        from_location=journey['from'],
-                        to_station=station_name,
-                        duration_minutes=duration,
-                        route_type="public_transport"
-                    ))
                 
                 avg_time = total_time / len(locations) if locations else 0
                 min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0

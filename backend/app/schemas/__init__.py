@@ -1,6 +1,7 @@
 from .location import (
     LocationInput,
     ProcessedLocation,
+    JourneyLeg,
     JourneyTime,
     MeetingStation,
     MeetingPointRequest,
@@ -11,6 +12,7 @@ from .location import (
 __all__ = [
     "LocationInput",
     "ProcessedLocation", 
+    "JourneyLeg",
     "JourneyTime",
     "MeetingStation",
     "MeetingPointRequest",
