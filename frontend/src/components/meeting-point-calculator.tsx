@@ -1,13 +1,27 @@
 'use client'
 
 import React, { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingOverlay } from '@/components/loading-spinner'
 import { api, LocationInput, MeetingPointResponse } from '@/lib/api'
-import { Plus, Trash2, MapPin, Clock, Users, TrendingUp, Zap, Award, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, MapPin, Clock, Users, TrendingUp, Zap, Award, ArrowRight, Map } from 'lucide-react'
+
+// Dynamic import for the map to avoid SSR issues
+const MeetingMap = dynamic(() => import('./meeting-map').then(mod => mod.MeetingMap), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[500px] rounded-xl bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+      <div className="text-center space-y-3">
+        <div className="w-16 h-16 mx-auto rounded-full gradient-primary animate-pulse" />
+        <p className="text-gray-600">Loading map...</p>
+      </div>
+    </div>
+  ),
+})
 
 export function MeetingPointCalculator() {
   const [locations, setLocations] = useState<LocationInput[]>([
@@ -179,6 +193,15 @@ export function MeetingPointCalculator() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Map visualization */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Map className="h-5 w-5 text-purple-600" />
+                    <h3 className="font-semibold text-lg">Route Visualization</h3>
+                  </div>
+                  <MeetingMap result={result} />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="border-0 bg-gradient-to-br from-purple-50 to-purple-100 hover-lift">
                     <CardContent className="pt-6">
