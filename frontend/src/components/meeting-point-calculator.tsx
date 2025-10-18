@@ -32,6 +32,20 @@ export function MeetingPointCalculator() {
   const [result, setResult] = useState<MeetingPointResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Same colors as the map markers
+  const colors = [
+    '#a855f7', // purple
+    '#3b82f6', // blue
+    '#f97316', // orange
+    '#10b981', // emerald
+    '#f43f5e', // rose
+    '#6366f1', // indigo
+    '#84cc16', // lime
+    '#06b6d4', // cyan
+    '#ec4899', // pink
+    '#8b5cf6', // violet
+  ]
+
   const handleAddLocation = () => {
     if (locations.length < 10) {
       setLocations([...locations, { name: '', address: '' }])
@@ -94,15 +108,43 @@ export function MeetingPointCalculator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              {locations.map((location, index) => (
-                <div key={index} className="group relative">
-                  <div className="flex gap-4 items-end">
-                    <div className="flex-shrink-0 mt-8">
-                      <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-semibold shadow-lg">
-                        {index + 1}
+              {locations.map((location, index) => {
+                // Get initials from name
+                const getInitials = (name: string) => {
+                  if (!name) return '?'
+                  const parts = name.trim().split(' ')
+                  if (parts.length === 1) {
+                    return parts[0].charAt(0).toUpperCase()
+                  }
+                  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+                }
+                
+                return (
+                  <div key={index} className="group relative">
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-shrink-0 mt-8">
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg"
+                          style={{
+                            background: `linear-gradient(135deg, ${colors[index % colors.length]}, ${colors[index % colors.length]}dd)`,
+                          }}
+                        >
+                          {getInitials(location.name)}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex-1 flex gap-4 items-end p-4 rounded-xl bg-gradient-to-r from-purple-50/50 to-blue-50/50 border border-purple-100 hover:border-purple-200 transition-all">
+                    <div 
+                      className="flex-1 flex gap-4 items-end p-4 rounded-xl border-2 transition-all"
+                      style={{
+                        background: `linear-gradient(to right, ${colors[index % colors.length]}10, ${colors[index % colors.length]}08)`,
+                        borderColor: `${colors[index % colors.length]}30`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = `${colors[index % colors.length]}60`
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = `${colors[index % colors.length]}30`
+                      }}
+                    >
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor={`name-${index}`} className="text-sm font-medium text-gray-700">
@@ -113,7 +155,10 @@ export function MeetingPointCalculator() {
                           placeholder="e.g., Alice"
                           value={location.name}
                           onChange={(e) => handleLocationChange(index, 'name', e.target.value)}
-                          className="border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                          className="border-gray-200"
+                          style={{
+                            borderColor: location.name ? `${colors[index % colors.length]}40` : undefined,
+                          }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -125,7 +170,10 @@ export function MeetingPointCalculator() {
                           placeholder="e.g., Victoria Station, London"
                           value={location.address || ''}
                           onChange={(e) => handleLocationChange(index, 'address', e.target.value)}
-                          className="border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                          className="border-gray-200"
+                          style={{
+                            borderColor: location.address ? `${colors[index % colors.length]}40` : undefined,
+                          }}
                         />
                       </div>
                     </div>
@@ -140,8 +188,9 @@ export function MeetingPointCalculator() {
                     </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
 
             {error && (

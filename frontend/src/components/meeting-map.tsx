@@ -18,7 +18,7 @@ interface MeetingMapProps {
   result: MeetingPointResponse
 }
 
-// Create custom icons
+// Create custom icons with initials
 const createPersonIcon = (color: string, label: string) => {
   return L.divIcon({
     className: 'custom-div-icon',
@@ -26,8 +26,8 @@ const createPersonIcon = (color: string, label: string) => {
       <div style="
         background: linear-gradient(135deg, ${color}, ${color}dd);
         color: white;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -40,10 +40,20 @@ const createPersonIcon = (color: string, label: string) => {
         ${label}
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36],
   })
+}
+
+// Get initials from name
+const getInitials = (name: string) => {
+  if (!name) return '?'
+  const parts = name.trim().split(' ')
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase()
+  }
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 const meetingPointIcon = L.divIcon({
@@ -263,7 +273,7 @@ export function MeetingMap({ result }: MeetingMapProps) {
             {/* Starting point marker */}
             <Marker 
               position={route.from} 
-              icon={createPersonIcon(route.color, (index + 1).toString())}
+              icon={createPersonIcon(route.color, getInitials(route.name))}
             >
               <Popup>
                 <div className="text-center">
