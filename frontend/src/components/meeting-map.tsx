@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, CircleMarker } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -19,30 +19,32 @@ interface MeetingMapProps {
 }
 
 // Create custom icons with initials
-const createPersonIcon = (color: string, label: string) => {
+const createPersonIcon = (color: string, label: string, isSelected: boolean = false) => {
   return L.divIcon({
     className: 'custom-div-icon',
     html: `
       <div style="
         background: linear-gradient(135deg, ${color}, ${color}dd);
         color: white;
-        width: 36px;
-        height: 36px;
+        width: ${isSelected ? '42px' : '36px'};
+        height: ${isSelected ? '42px' : '36px'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        font-size: 14px;
-        border: 3px solid white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        font-size: ${isSelected ? '16px' : '14px'};
+        border: ${isSelected ? '4px' : '3px'} solid white;
+        box-shadow: ${isSelected ? '0 6px 12px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.2)'};
+        ${isSelected ? 'animation: pulse-marker 1.5s ease-in-out infinite;' : ''}
+        transition: all 0.3s ease;
       ">
         ${label}
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -36],
+    iconSize: isSelected ? [42, 42] : [36, 36],
+    iconAnchor: isSelected ? [21, 42] : [18, 36],
+    popupAnchor: [0, isSelected ? -42 : -36],
   })
 }
 
@@ -189,6 +191,8 @@ function AutoFitBounds({ locations }: { locations: [number, number][] }) {
 }
 
 export function MeetingMap({ result }: MeetingMapProps) {
+  const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null)
+  
   const colors = [
     '#a855f7', // purple
     '#3b82f6', // blue
@@ -374,6 +378,16 @@ export function MeetingMap({ result }: MeetingMapProps) {
           transform: scale(1.1) !important;
           transition: transform 0.3s ease;
         }
+        
+        /* Animation for selected user markers */
+        @keyframes pulse-marker {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.1);
+          }
+        }
       `
       document.head.appendChild(style)
       
@@ -455,6 +469,10 @@ export function MeetingMap({ result }: MeetingMapProps) {
                 const lineColor = getLineColor(leg.mode, leg.line_name)
                 const lineStyle = getLineStyle(leg.mode)
                 
+                // Determine opacity based on selection
+                const isSelected = selectedUserIndex === journeyIndex
+                const isOtherSelected = selectedUserIndex !== null && selectedUserIndex !== journeyIndex
+                const adjustedOpacity = isOtherSelected ? lineStyle.opacity * 0.2 : lineStyle.opacity
                 
                 // Build the complete path including intermediate stops
                 const legPath: [number, number][] = [
@@ -482,8 +500,8 @@ export function MeetingMap({ result }: MeetingMapProps) {
                       positions={legPath}
                       pathOptions={{
                         color: lineColor,
-                        weight: lineStyle.weight,
-                        opacity: lineStyle.opacity,
+                        weight: isSelected ? lineStyle.weight + 1 : lineStyle.weight,
+                        opacity: adjustedOpacity,
                         dashArray: lineStyle.dashArray || undefined,
                         lineCap: 'round',
                         lineJoin: 'round'
@@ -511,8 +529,8 @@ export function MeetingMap({ result }: MeetingMapProps) {
               <Polyline
                 positions={[[journey.from[0], journey.from[1]], [journey.to[0], journey.to[1]]]}
                 color={journey.personColor}
-                weight={3}
-                opacity={0.5}
+                weight={selectedUserIndex === journeyIndex ? 4 : 3}
+                opacity={selectedUserIndex !== null && selectedUserIndex !== journeyIndex ? 0.1 : 0.5}
                 dashArray="10, 10"
               />
             )}
@@ -520,7 +538,13 @@ export function MeetingMap({ result }: MeetingMapProps) {
             {/* Starting point marker */}
             <Marker 
               position={journey.from} 
-              icon={createPersonIcon(journey.personColor, getInitials(journey.name))}
+              icon={createPersonIcon(journey.personColor, getInitials(journey.name), selectedUserIndex === journeyIndex)}
+              eventHandlers={{
+                click: () => {
+                  // Toggle selection - if clicking same user, deselect
+                  setSelectedUserIndex(prev => prev === journeyIndex ? null : journeyIndex)
+                }
+              }}
             >
               <Popup>
                 <div className="text-center">
@@ -536,6 +560,17 @@ export function MeetingMap({ result }: MeetingMapProps) {
                       <p>Changes: {journey.transfers}</p>
                     )}
                   </div>
+                  <div className="mt-2 pt-2 border-t">
+                    <button 
+                      className="text-xs text-purple-600 hover:text-purple-800"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedUserIndex(prev => prev === journeyIndex ? null : journeyIndex)
+                      }}
+                    >
+                      {selectedUserIndex === journeyIndex ? 'Show all journeys' : 'Highlight this journey'}
+                    </button>
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -543,6 +578,25 @@ export function MeetingMap({ result }: MeetingMapProps) {
         ))}
       </MapContainer>
       <MapLegend />
+      {selectedUserIndex !== null && (
+        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-10">
+          <div className="flex items-center gap-2">
+            <div 
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: colors[selectedUserIndex % colors.length] }}
+            />
+            <span className="text-sm font-medium">
+              {result.processed_locations[selectedUserIndex].name}'s journey
+            </span>
+            <button
+              onClick={() => setSelectedUserIndex(null)}
+              className="ml-2 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
