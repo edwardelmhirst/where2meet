@@ -100,45 +100,45 @@ const meetingPointIcon = L.divIcon({
 
 // Transport line colors based on TfL standards
 const getLineColor = (modeName: string, lineName?: string): string => {
-  const mode = modeName.toLowerCase()
-  const line = lineName?.toLowerCase() || ''
+  const mode = modeName.toLowerCase().trim()
+  const line = (lineName || '').toLowerCase().trim()
   
+  // MODE CHECK FIRST - Bus always gets red
+  if (mode === 'bus') return '#E32017' // TfL bus red
+  if (mode === 'walking') return '#333333'
   
-  // TUBE LINES - Check line name first for specific tube lines
-  if (line) {
+  // TUBE/RAIL LINES - Check line name for specific colors
+  if (line && (mode === 'tube' || mode === 'underground' || mode === 'rail')) {
     // Official TfL hex colors
     if (line.includes('bakerloo')) return '#B36305'
     if (line.includes('central')) return '#E32017'
     if (line.includes('circle')) return '#FFD300'
     if (line.includes('district')) return '#00782A'
-    if (line.includes('hammersmith')) return '#F3A9BB'
+    if (line.includes('hammersmith') || line.includes('h&c')) return '#F3A9BB'
     if (line.includes('jubilee')) return '#A0A5A9'
     if (line.includes('metropolitan')) return '#9B0056'
     if (line.includes('northern')) return '#000000'
     if (line.includes('piccadilly')) return '#003688'
     if (line.includes('victoria')) return '#0098D4'
-    if (line.includes('waterloo')) return '#95CDBA'
-    
-    // Other rail lines
-    if (line.includes('elizabeth')) return '#9364CC'
-    if (line.includes('dlr')) return '#00A77E'
-    if (line.includes('overground')) return '#EF7B10'
-    if (line.includes('tram')) return '#6CC04A'
+    if (line.includes('waterloo') || line.includes('w&c')) return '#95CDBA'
   }
   
-  // MODE-BASED FALLBACKS (only if no specific line)
-  if (mode === 'bus') return '#E32017'
-  if (mode === 'walking') return '#333333'
-  if (mode === 'dlr') return '#00A77E'
-  if (mode === 'overground') return '#EF7B10'
-  if (mode === 'tube' || mode === 'underground') return '#003688' // Generic tube blue
+  // DLR/Overground/Elizabeth line
+  if (mode === 'dlr' || line.includes('dlr')) return '#00A77E'
+  if (mode === 'overground' || line.includes('overground')) return '#EF7B10'
+  if (line.includes('elizabeth')) return '#9364CC'
+  if (line.includes('tram')) return '#6CC04A'
   
-  return '#666666' // Default gray
+  // Fallback for generic tube (shouldn't happen with proper line names)
+  if (mode === 'tube' || mode === 'underground') return '#003688'
+  
+  // Default gray (should rarely reach here)
+  return '#666666'
 }
 
 // Get line style based on transport mode
 const getLineStyle = (mode: string): { dashArray?: string, weight: number, opacity: number } => {
-  const modeLower = mode.toLowerCase()
+  const modeLower = mode.toLowerCase().trim()
   
   // Walking - dotted
   if (modeLower === 'walking') {
@@ -312,23 +312,26 @@ export function MeetingMap({ result }: MeetingMapProps) {
 
   // Create a legend component
   const MapLegend = () => (
-    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[1000] max-w-xs">
+    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-10 max-w-xs">
       <h4 className="font-semibold text-sm mb-2">Journey Routes</h4>
       <div className="space-y-1.5 text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-0.5 bg-gray-800" style={{ borderBottom: '2px dotted #333' }} />
+          <svg width="24" height="4">
+            <line x1="0" y1="2" x2="24" y2="2" stroke="#333" strokeWidth="2" strokeDasharray="2,4" />
+          </svg>
           <span>Walking</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-1 bg-red-600" style={{ borderBottom: '2px dashed #DC241F' }} />
+          <svg width="24" height="4">
+            <line x1="0" y1="2" x2="24" y2="2" stroke="#E32017" strokeWidth="3" strokeDasharray="6,3" />
+          </svg>
           <span>Bus</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-1 bg-blue-600" />
+          <svg width="24" height="4">
+            <line x1="0" y1="2" x2="24" y2="2" stroke="#0098D4" strokeWidth="3" />
+          </svg>
           <span>Tube/Rail</span>
-        </div>
-        <div className="text-gray-500 mt-2 pt-2 border-t">
-          Lines shown in actual TfL colors
         </div>
       </div>
     </div>
@@ -377,13 +380,14 @@ export function MeetingMap({ result }: MeetingMapProps) {
                 const lineColor = getLineColor(leg.mode, leg.line_name)
                 const lineStyle = getLineStyle(leg.mode)
                 
-                // Debug logging
-                console.log(`Journey ${journeyIndex}, Leg ${legIndex}:`, {
+                // Debug what's actually being applied
+                console.log(`Applying to Polyline - J${journeyIndex}L${legIndex}:`, {
                   mode: leg.mode,
-                  line_name: leg.line_name,
-                  calculated_color: lineColor,
-                  from: leg.from_name,
-                  to: leg.to_name
+                  line: leg.line_name,
+                  color: lineColor,
+                  dashArray: lineStyle.dashArray || 'SOLID',
+                  from: leg.from_name?.substring(0, 20),
+                  to: leg.to_name?.substring(0, 20)
                 })
                 
                 // Build the complete path including intermediate stops
@@ -401,15 +405,23 @@ export function MeetingMap({ result }: MeetingMapProps) {
                 // Add the final destination
                 legPath.push(leg.to_coords as [number, number])
                 
+                // Create a unique key for this leg
+                const uniqueKey = `journey-${journeyIndex}-leg-${legIndex}-${leg.mode}-${leg.line_name || 'no-line'}`
+                
                 return (
-                  <React.Fragment key={`${journeyIndex}-${legIndex}`}>
+                  <React.Fragment key={uniqueKey}>
                     {/* Route line for this leg */}
                     <Polyline
+                      key={`polyline-${uniqueKey}`}
                       positions={legPath}
-                      color={lineColor}
-                      weight={lineStyle.weight}
-                      opacity={lineStyle.opacity}
-                      dashArray={lineStyle.dashArray}
+                      pathOptions={{
+                        color: lineColor,
+                        weight: lineStyle.weight,
+                        opacity: lineStyle.opacity,
+                        dashArray: lineStyle.dashArray || undefined,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                      }}
                     >
                       <Popup>
                         <div className="text-sm">
