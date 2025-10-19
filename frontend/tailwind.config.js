@@ -7,6 +7,15 @@ module.exports = {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
+  safelist: [
+    // Fairness rating card backgrounds
+    'from-green-50', 'to-green-100', 'text-green-700', 'text-green-900',
+    'from-emerald-50', 'to-emerald-100', 'text-emerald-700', 'text-emerald-900',
+    'from-yellow-50', 'to-yellow-100', 'text-yellow-700', 'text-yellow-900',
+    'from-orange-50', 'to-orange-100', 'text-orange-700', 'text-orange-900',
+    'from-red-50', 'to-red-100', 'text-red-700', 'text-red-900',
+    'from-gray-50', 'to-gray-100', 'text-gray-700', 'text-gray-900',
+  ],
   prefix: "",
   theme: {
     container: {

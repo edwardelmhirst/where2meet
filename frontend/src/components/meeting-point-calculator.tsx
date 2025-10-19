@@ -59,6 +59,47 @@ const getFairnessColor = (rating: string): string => {
   }
 }
 
+const getFairnessCardColors = (score: string): { bg: string, text: string, icon: string } => {
+  switch (score) {
+    case 'Very Fair':
+      return { 
+        bg: 'from-green-50 to-green-100', 
+        text: 'text-green-900',
+        icon: 'text-green-700'
+      }
+    case 'Fair':
+      return { 
+        bg: 'from-emerald-50 to-emerald-100', 
+        text: 'text-emerald-900',
+        icon: 'text-emerald-700'
+      }
+    case 'Moderate':
+      return { 
+        bg: 'from-yellow-50 to-yellow-100', 
+        text: 'text-yellow-900',
+        icon: 'text-yellow-700'
+      }
+    case 'Somewhat Unfair':
+      return { 
+        bg: 'from-orange-50 to-orange-100', 
+        text: 'text-orange-900',
+        icon: 'text-orange-700'
+      }
+    case 'Unfair':
+      return { 
+        bg: 'from-red-50 to-red-100', 
+        text: 'text-red-900',
+        icon: 'text-red-700'
+      }
+    default:
+      return { 
+        bg: 'from-gray-50 to-gray-100', 
+        text: 'text-gray-900',
+        icon: 'text-gray-700'
+      }
+  }
+}
+
 export function MeetingPointCalculator() {
   const [locations, setLocations] = useState<LocationInput[]>([
     { name: '', address: '' },
@@ -310,17 +351,65 @@ export function MeetingPointCalculator() {
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="border-0 bg-gradient-to-br from-pink-50 to-pink-100 hover-lift">
+                  <Card className={`border-0 hover-lift bg-gradient-to-br ${
+                    result.optimal_station.fairness_score === 'Very Fair' 
+                      ? 'from-green-50 to-green-100' 
+                      : result.optimal_station.fairness_score === 'Fair'
+                      ? 'from-emerald-50 to-emerald-100'
+                      : result.optimal_station.fairness_score === 'Moderate'
+                      ? 'from-yellow-50 to-yellow-100'
+                      : result.optimal_station.fairness_score === 'Somewhat Unfair'
+                      ? 'from-orange-50 to-orange-100'
+                      : result.optimal_station.fairness_score === 'Unfair'
+                      ? 'from-red-50 to-red-100'
+                      : 'from-gray-50 to-gray-100'
+                  }`}>
                     <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 text-sm text-pink-700 mb-2">
+                      <div className={`flex items-center gap-2 text-sm mb-2 ${
+                        result.optimal_station.fairness_score === 'Very Fair'
+                          ? 'text-green-700'
+                          : result.optimal_station.fairness_score === 'Fair'
+                          ? 'text-emerald-700'
+                          : result.optimal_station.fairness_score === 'Moderate'
+                          ? 'text-yellow-700'
+                          : result.optimal_station.fairness_score === 'Somewhat Unfair'
+                          ? 'text-orange-700'
+                          : result.optimal_station.fairness_score === 'Unfair'
+                          ? 'text-red-700'
+                          : 'text-gray-700'
+                      }`}>
                         <TrendingUp className="h-4 w-4" />
                         Fairness Rating
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-pink-900">
+                        <p className={`text-2xl font-bold ${
+                          result.optimal_station.fairness_score === 'Very Fair'
+                            ? 'text-green-900'
+                            : result.optimal_station.fairness_score === 'Fair'
+                            ? 'text-emerald-900'
+                            : result.optimal_station.fairness_score === 'Moderate'
+                            ? 'text-yellow-900'
+                            : result.optimal_station.fairness_score === 'Somewhat Unfair'
+                            ? 'text-orange-900'
+                            : result.optimal_station.fairness_score === 'Unfair'
+                            ? 'text-red-900'
+                            : 'text-gray-900'
+                        }`}>
                           {result.optimal_station.fairness_score}
                         </p>
-                        <p className="text-xs text-pink-700 mt-1">
+                        <p className={`text-xs mt-1 ${
+                          result.optimal_station.fairness_score === 'Very Fair'
+                            ? 'text-green-700'
+                            : result.optimal_station.fairness_score === 'Fair'
+                            ? 'text-emerald-700'
+                            : result.optimal_station.fairness_score === 'Moderate'
+                            ? 'text-yellow-700'
+                            : result.optimal_station.fairness_score === 'Somewhat Unfair'
+                            ? 'text-orange-700'
+                            : result.optimal_station.fairness_score === 'Unfair'
+                            ? 'text-red-700'
+                            : 'text-gray-700'
+                        }`}>
                           {getFairnessDescription(result.optimal_station.fairness_score)}
                         </p>
                       </div>

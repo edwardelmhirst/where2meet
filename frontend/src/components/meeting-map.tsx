@@ -380,15 +380,6 @@ export function MeetingMap({ result }: MeetingMapProps) {
                 const lineColor = getLineColor(leg.mode, leg.line_name)
                 const lineStyle = getLineStyle(leg.mode)
                 
-                // Debug what's actually being applied
-                console.log(`Applying to Polyline - J${journeyIndex}L${legIndex}:`, {
-                  mode: leg.mode,
-                  line: leg.line_name,
-                  color: lineColor,
-                  dashArray: lineStyle.dashArray || 'SOLID',
-                  from: leg.from_name?.substring(0, 20),
-                  to: leg.to_name?.substring(0, 20)
-                })
                 
                 // Build the complete path including intermediate stops
                 const legPath: [number, number][] = [
