@@ -24,6 +24,41 @@ const MeetingMap = dynamic(() => import('./meeting-map').then(mod => mod.Meeting
   ),
 })
 
+// Helper functions for fairness display
+const getFairnessDescription = (rating: string): string => {
+  switch (rating) {
+    case 'Very Fair':
+      return 'Everyone travels similar times'
+    case 'Fair':
+      return 'Journey times are well balanced'
+    case 'Moderate':
+      return 'Some variation in journey times'
+    case 'Somewhat Unfair':
+      return 'Significant differences in travel'
+    case 'Unfair':
+      return 'Large disparities in journey times'
+    default:
+      return 'Unknown fairness rating'
+  }
+}
+
+const getFairnessColor = (rating: string): string => {
+  switch (rating) {
+    case 'Very Fair':
+      return 'text-green-600'
+    case 'Fair':
+      return 'text-blue-600'
+    case 'Moderate':
+      return 'text-yellow-600'
+    case 'Somewhat Unfair':
+      return 'text-orange-600'
+    case 'Unfair':
+      return 'text-red-600'
+    default:
+      return 'text-gray-600'
+  }
+}
+
 export function MeetingPointCalculator() {
   const [locations, setLocations] = useState<LocationInput[]>([
     { name: '', address: '' },
@@ -279,11 +314,16 @@ export function MeetingPointCalculator() {
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-2 text-sm text-pink-700 mb-2">
                         <TrendingUp className="h-4 w-4" />
-                        Fairness Score
+                        Fairness Rating
                       </div>
-                      <p className="text-3xl font-bold text-pink-900">
-                        {result.optimal_station.fairness_score.toFixed(1)}/10
-                      </p>
+                      <div>
+                        <p className="text-2xl font-bold text-pink-900">
+                          {result.optimal_station.fairness_score}
+                        </p>
+                        <p className="text-xs text-pink-700 mt-1">
+                          {getFairnessDescription(result.optimal_station.fairness_score)}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -314,8 +354,10 @@ export function MeetingPointCalculator() {
                                 <span className="font-medium text-blue-600">{Math.round(station.max_journey_time)} min</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-600">Score:</span>
-                                <span className="font-medium text-pink-600">{station.fairness_score.toFixed(1)}/10</span>
+                                <span className="text-gray-600">Fairness:</span>
+                                <span className={`font-medium ${getFairnessColor(station.fairness_score)}`}>
+                                  {station.fairness_score}
+                                </span>
                               </div>
                             </div>
                           </CardContent>

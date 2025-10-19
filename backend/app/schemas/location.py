@@ -57,7 +57,7 @@ class MeetingStation(BaseModel):
     average_journey_time: float
     max_journey_time: float
     total_journey_time: float
-    fairness_score: float
+    fairness_score: str
     journey_times: List[JourneyTime]
 
 
@@ -99,7 +99,7 @@ class MeetingPointResponse(BaseModel):
                     "average_journey_time": 15.5,
                     "max_journey_time": 20,
                     "total_journey_time": 46.5,
-                    "fairness_score": 8,
+                    "fairness_score": "Fair",
                     "journey_times": []
                 },
                 "alternative_stations": [],

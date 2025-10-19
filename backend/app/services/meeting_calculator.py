@@ -145,7 +145,22 @@ class MeetingCalculator:
                 
                 avg_time = total_time / len(locations) if locations else 0
                 min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
-                fairness_score = max_time - min_time
+                
+                # Calculate fairness score based on the spread of journey times
+                # Lower spread = more fair
+                time_spread = max_time - min_time
+                
+                # Convert to a discrete text rating where lower spread is better
+                if time_spread <= 5:
+                    fairness_score = "Very Fair"
+                elif time_spread <= 10:
+                    fairness_score = "Fair"
+                elif time_spread <= 15:
+                    fairness_score = "Moderate"
+                elif time_spread <= 20:
+                    fairness_score = "Somewhat Unfair"
+                else:
+                    fairness_score = "Unfair"
                 
                 station = MeetingStation(
                     station_name=station_name,
@@ -185,7 +200,22 @@ class MeetingCalculator:
                 
                 avg_time = total_time / len(locations) if locations else 0
                 min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
-                fairness_score = max_time - min_time
+                
+                # Calculate fairness score based on the spread of journey times
+                # Lower spread = more fair
+                time_spread = max_time - min_time
+                
+                # Convert to a discrete text rating where lower spread is better
+                if time_spread <= 5:
+                    fairness_score = "Very Fair"
+                elif time_spread <= 10:
+                    fairness_score = "Fair"
+                elif time_spread <= 15:
+                    fairness_score = "Moderate"
+                elif time_spread <= 20:
+                    fairness_score = "Somewhat Unfair"
+                else:
+                    fairness_score = "Unfair"
                 
                 station = MeetingStation(
                     station_name=station_name,
@@ -199,7 +229,9 @@ class MeetingCalculator:
                 )
                 results.append(station)
         
-        results.sort(key=lambda x: (x.average_journey_time, x.fairness_score))
+        # Sort by average journey time first, then by fairness (using a priority order)
+        fairness_order = {"Very Fair": 0, "Fair": 1, "Moderate": 2, "Somewhat Unfair": 3, "Unfair": 4}
+        results.sort(key=lambda x: (x.average_journey_time, fairness_order.get(x.fairness_score, 5)))
         
         optimal = results[0] if results else None
         alternatives = results[1:6] if len(results) > 1 else []

@@ -40,7 +40,7 @@ export interface MeetingStation {
   average_journey_time: number
   max_journey_time: number
   total_journey_time: number
-  fairness_score: number
+  fairness_score: string
   journey_times: JourneyDetail[]
 }
 
