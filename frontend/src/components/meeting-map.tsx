@@ -561,12 +561,6 @@ export function MeetingMap({ result }: MeetingMapProps) {
             <span className="text-sm font-medium">
               {result.processed_locations[selectedUserIndex].name}'s journey
             </span>
-            <button
-              onClick={() => setSelectedUserIndex(null)}
-              className="ml-2 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded transition-colors"
-            >
-              Clear
-            </button>
           </div>
         </div>
       )}
