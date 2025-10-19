@@ -85,24 +85,6 @@ const meetingPointIcon = L.divIcon({
         <circle cx="20" cy="20" r="8" fill="white"/>
         <circle cx="20" cy="20" r="4" fill="url(#pinGradient)"/>
       </svg>
-      <div class="star-badge" style="
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        background: #f97316;
-        color: white;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: bold;
-        border: 2px solid white;
-        animation: rotate 3s linear infinite;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      ">★</div>
       <div class="pulse-ring" style="
         position: absolute;
         width: 40px;
@@ -343,15 +325,6 @@ export function MeetingMap({ result }: MeetingMapProps) {
           }
           100% {
             filter: drop-shadow(0 8px 16px rgba(168, 85, 247, 0.4));
-          }
-        }
-        
-        @keyframes rotate {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
           }
         }
         
