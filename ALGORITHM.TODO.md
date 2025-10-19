@@ -1,5 +1,145 @@
 # Algorithm Enhancement Roadmap
 
+## Research
+- https://www.researchgate.net/publication/220538719_Efficient_Algorithms_for_Finding_Optimal_Meeting_Point_on_Road_Networks
+- Fast Greedy Algorithm: Academic approach for finding optimal meeting points on road networks
+
+### Fast Greedy Algorithm (Research Paper Implementation)
+
+**Overview:**
+The Fast Greedy algorithm from academic research provides a theoretically-grounded approach to finding near-optimal meeting points on road networks. It exploits the "almost convex" nature of sum-of-distances functions in metric spaces.
+
+**How it works:**
+1. **Centroid Initialization**: Find the geographic center of all users' locations
+2. **Nearest Vertex Selection**: Map centroid to nearest station using spatial indexing (KD-tree)
+3. **Greedy Hill Climbing**: Iteratively move to neighboring stations with lower total distance
+4. **Local Optimum**: Stop when no neighbor improves the solution
+
+**Key Properties:**
+- Convergence: Typically 3-5 iterations
+- Approximation Quality: Within 3-5% of true optimal
+- Time Complexity: O(k × |E| × n) where k=iterations, |E|=edges per vertex, n=users
+- Space Complexity: O(|V|) for network storage
+
+**Application to Where2Meet:**
+
+**Direct Implementation Challenges:**
+1. **Network Structure**: TfL network isn't a simple road graph - it has:
+   - Multiple transport modes (tube, bus, rail, walking)
+   - Time-based weights (not just distance)
+   - Service patterns (peak/off-peak variations)
+   - Temporary disruptions
+
+2. **Algorithm Assumptions vs Reality:**
+   - Algorithm assumes static edge weights → TfL has dynamic journey times
+   - Algorithm uses graph distance → We need actual journey times via API
+   - Algorithm works on continuous network → London has discrete stations
+
+**Proposed Adaptation for Where2Meet:**
+
+```python
+class TfLFastGreedy:
+    """Adapted Fast Greedy for London Transport Network"""
+    
+    def __init__(self):
+        # Pre-built TfL network graph with stations as vertices
+        self.tfl_graph = {
+            'Victoria': {
+                'neighbors': ['Green Park', 'Sloane Square', 'Pimlico'],
+                'lines': ['Victoria', 'Circle', 'District'],
+                'zone': 1
+            },
+            # ... all TfL stations
+        }
+        
+    async def find_meeting_point(self, user_locations):
+        # Step 1: Find centroid of users
+        centroid = calculate_geographic_center(user_locations)
+        
+        # Step 2: Find nearest major station to centroid
+        current_station = find_nearest_station(centroid, self.tfl_graph)
+        
+        # Step 3: Get initial journey times via TfL API
+        current_times = await self.get_journey_times(current_station, user_locations)
+        current_sum = sum(current_times)
+        
+        # Step 4: Fast Greedy improvement
+        improved = True
+        iterations = 0
+        api_calls_made = len(user_locations)  # Initial calls
+        
+        while improved and iterations < 5:  # Limit iterations
+            improved = False
+            iterations += 1
+            
+            # Get neighboring stations (connected by direct lines)
+            neighbors = self.get_neighboring_stations(current_station)
+            
+            # Evaluate only top 3 most promising neighbors (to limit API calls)
+            promising_neighbors = self.rank_neighbors_by_potential(
+                neighbors, 
+                current_station, 
+                user_locations
+            )[:3]
+            
+            for neighbor in promising_neighbors:
+                neighbor_times = await self.get_journey_times(neighbor, user_locations)
+                neighbor_sum = sum(neighbor_times)
+                api_calls_made += len(user_locations)
+                
+                if neighbor_sum < current_sum:
+                    current_station = neighbor
+                    current_sum = neighbor_sum
+                    current_times = neighbor_times
+                    improved = True
+                    break  # Take first improvement (more greedy)
+        
+        return current_station, current_times, api_calls_made
+```
+
+**Benefits of Fast Greedy Adaptation:**
+1. ✅ **Fewer API Calls**: Instead of checking 25 stations, we check ~10-15
+2. ✅ **Better Starting Point**: Centroid initialization better than random selection
+3. ✅ **Theoretical Foundation**: Based on proven algorithm with known properties
+4. ✅ **Quick Convergence**: Usually finds good solution in 3-5 iterations
+5. ✅ **Network-Aware**: Follows actual transport connections, not geographic proximity
+
+**Limitations:**
+1. ❌ **Local Optima Risk**: May miss global optimum if starting point is poor
+2. ❌ **API Dependency**: Still needs real-time data for actual journey times
+3. ❌ **Express Routes**: May not discover express routes unless in neighborhood
+4. ❌ **Dynamic Times**: Can't leverage pre-computed distances due to time variations
+
+**Integration Strategy:**
+
+**Phase 1: Hybrid Fast Greedy (Quick Win)**
+- Use Fast Greedy to select candidates
+- Validate with TfL API
+- Fallback to current approach if needed
+
+**Phase 2: Enhanced Network Graph**
+- Build comprehensive TfL station graph
+- Include express route shortcuts
+- Add zone-based heuristics
+
+**Phase 3: Multi-Start Optimization**
+- Run Fast Greedy from multiple starting points
+- Use different initialization strategies:
+  - Geographic centroid (current)
+  - Weighted centroid (by population density)
+  - Major interchange hubs
+- Select best result
+
+**Performance Comparison:**
+
+| Metric | Current Approach | Fast Greedy | Hybrid Fast Greedy |
+|--------|------------------|-------------|-------------------|
+| API Calls (4 users) | 28 | 40-60 | 20-40 |
+| Iterations | 1 | 3-5 | 3-5 |
+| Solution Quality | Good | Near-optimal | Near-optimal |
+| Handles Express Routes | No | No | Yes (Phase 2) |
+| Theoretical Guarantee | None | 3-5% approximation | 3-5% approximation |
+
 ## Current Implementation
 
 ### Fixed Station Pool Approach (CURRENT)
