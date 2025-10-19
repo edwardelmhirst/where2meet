@@ -76,6 +76,35 @@ class TfLService:
                             line_name = route_option.get('name')
                             direction = route_option.get('direction')
                         
+                        # Extract intermediate stops or path coordinates
+                        intermediate_stops = []
+                        
+                        # For tube/bus legs, use the lineString coordinates (smoothed path)
+                        # We'll sample every few points to avoid too many markers
+                        if leg.get('path') and leg.get('path', {}).get('lineString'):
+                            line_string = leg['path']['lineString']
+                            # Parse lineString which is in format "[[lng,lat],[lng,lat],...]"
+                            import json
+                            try:
+                                coords = json.loads(line_string)
+                                # Sample every 3rd point to avoid overcrowding, skip first and last
+                                for i in range(1, len(coords) - 1, 3):
+                                    if len(coords[i]) >= 2:
+                                        # lineString format is actually [[lat,lon],[lat,lon],...] 
+                                        # So coords[i][0] is latitude, coords[i][1] is longitude
+                                        intermediate_stops.append((coords[i][0], coords[i][1]))
+                            except:
+                                pass
+                        
+                        # Check for intermediate station stops (for specific station data)
+                        if not intermediate_stops and leg.get('intermediateStops'):
+                            for stop in leg['intermediateStops']:
+                                if stop.get('stopPoint'):
+                                    stop_point = stop['stopPoint']
+                                    if stop_point.get('lat') and stop_point.get('lon'):
+                                        intermediate_stops.append((stop_point['lat'], stop_point['lon']))
+                        
+                        # Count stops for display
                         if leg.get('stopPoints'):
                             stops = len(leg['stopPoints'])
                         
@@ -108,7 +137,8 @@ class TfLService:
                             line_name=line_name,
                             direction=direction,
                             stops=stops,
-                            instruction=instruction
+                            instruction=instruction,
+                            intermediate_stops=intermediate_stops
                         )
                         legs.append(journey_leg)
                     

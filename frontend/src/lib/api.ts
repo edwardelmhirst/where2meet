@@ -19,6 +19,7 @@ export interface JourneyLeg {
   direction?: string
   stops?: number
   instruction: string
+  intermediate_stops?: [number, number][]
 }
 
 export interface JourneyDetail {

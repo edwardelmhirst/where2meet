@@ -37,6 +37,7 @@ class JourneyLeg(BaseModel):
     direction: Optional[str] = None
     stops: Optional[int] = None  # number of stops
     instruction: str  # e.g., "Take Victoria line towards Brixton"
+    intermediate_stops: List[Tuple[float, float]] = []  # coordinates of intermediate stops
 
 class JourneyTime(BaseModel):
     from_location: str

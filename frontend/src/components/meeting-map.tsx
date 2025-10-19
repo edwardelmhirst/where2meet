@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, CircleMarker } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MeetingPointResponse } from '@/lib/api'
+import { MeetingPointResponse, JourneyLeg } from '@/lib/api'
 
 // Fix for default markers in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -98,20 +98,60 @@ const meetingPointIcon = L.divIcon({
   popupAnchor: [0, -48],
 })
 
-// Generate route points (simplified - in production you'd use actual routing API)
-const generateRoutePoints = (start: [number, number], end: [number, number]): [number, number][] => {
-  const points: [number, number][] = [start]
+// Transport line colors based on TfL standards
+const getLineColor = (modeName: string, lineName?: string): string => {
+  const mode = modeName.toLowerCase()
+  const line = lineName?.toLowerCase() || ''
   
-  // Create a curved path with some intermediate points
-  const midLat = (start[0] + end[0]) / 2
-  const midLng = (start[1] + end[1]) / 2
   
-  // Add some curve to the route
-  const offset = 0.002 * Math.random() - 0.001
-  points.push([midLat + offset, midLng - offset])
-  points.push(end)
+  // TUBE LINES - Check line name first for specific tube lines
+  if (line) {
+    // Official TfL hex colors
+    if (line.includes('bakerloo')) return '#B36305'
+    if (line.includes('central')) return '#E32017'
+    if (line.includes('circle')) return '#FFD300'
+    if (line.includes('district')) return '#00782A'
+    if (line.includes('hammersmith')) return '#F3A9BB'
+    if (line.includes('jubilee')) return '#A0A5A9'
+    if (line.includes('metropolitan')) return '#9B0056'
+    if (line.includes('northern')) return '#000000'
+    if (line.includes('piccadilly')) return '#003688'
+    if (line.includes('victoria')) return '#0098D4'
+    if (line.includes('waterloo')) return '#95CDBA'
+    
+    // Other rail lines
+    if (line.includes('elizabeth')) return '#9364CC'
+    if (line.includes('dlr')) return '#00A77E'
+    if (line.includes('overground')) return '#EF7B10'
+    if (line.includes('tram')) return '#6CC04A'
+  }
   
-  return points
+  // MODE-BASED FALLBACKS (only if no specific line)
+  if (mode === 'bus') return '#E32017'
+  if (mode === 'walking') return '#333333'
+  if (mode === 'dlr') return '#00A77E'
+  if (mode === 'overground') return '#EF7B10'
+  if (mode === 'tube' || mode === 'underground') return '#003688' // Generic tube blue
+  
+  return '#666666' // Default gray
+}
+
+// Get line style based on transport mode
+const getLineStyle = (mode: string): { dashArray?: string, weight: number, opacity: number } => {
+  const modeLower = mode.toLowerCase()
+  
+  // Walking - dotted
+  if (modeLower === 'walking') {
+    return { dashArray: '5, 10', weight: 3, opacity: 0.6 }
+  }
+  
+  // Bus - dashed
+  if (modeLower === 'bus') {
+    return { dashArray: '10, 5', weight: 4, opacity: 0.7 }
+  }
+  
+  // Everything else (tube, dlr, overground, rail) - SOLID
+  return { weight: 5, opacity: 0.9 }
 }
 
 // Component to auto-fit bounds
@@ -191,23 +231,42 @@ export function MeetingMap({ result }: MeetingMapProps) {
   const mapCenter = result.map_center as [number, number]
   const optimalStation = result.optimal_station
 
-  // Calculate routes from each location to the meeting point
-  const routes = result.processed_locations.map((location, index) => ({
-    from: [location.latitude, location.longitude] as [number, number],
-    to: [optimalStation.latitude, optimalStation.longitude] as [number, number],
-    color: colors[index % colors.length],
-    name: location.name,
-    journeyTime: result.optimal_station.journey_times[index]?.duration_minutes || 0,
-  }))
+  // Process journey data with actual route legs
+  const journeyRoutes = useMemo(() => {
+    return result.optimal_station.journey_times.map((journey, index) => {
+      const location = result.processed_locations[index]
+      return {
+        from: [location.latitude, location.longitude] as [number, number],
+        to: [optimalStation.latitude, optimalStation.longitude] as [number, number],
+        personColor: colors[index % colors.length],
+        name: location.name,
+        journeyTime: journey.duration_minutes,
+        legs: journey.legs || [],
+        totalWalking: journey.total_walking_duration || 0,
+        transfers: journey.total_transfers || 0
+      }
+    })
+  }, [result, optimalStation, colors])
 
   // Collect all marker positions for auto-fitting bounds
   const allMarkerPositions = useMemo(() => {
     const positions: [number, number][] = [
       [optimalStation.latitude, optimalStation.longitude], // Meeting point
-      ...routes.map(route => route.from) // All starting locations
+      ...journeyRoutes.map(route => route.from) // All starting locations
     ]
+    
+    // Also include all intermediate points from journey legs
+    journeyRoutes.forEach(route => {
+      route.legs.forEach(leg => {
+        if (leg.from_coords && leg.to_coords) {
+          positions.push(leg.from_coords as [number, number])
+          positions.push(leg.to_coords as [number, number])
+        }
+      })
+    })
+    
     return positions
-  }, [optimalStation, routes])
+  }, [optimalStation, journeyRoutes])
 
   useEffect(() => {
     // Add custom styles for the map after component mounts
@@ -251,8 +310,32 @@ export function MeetingMap({ result }: MeetingMapProps) {
     }
   }, [])
 
+  // Create a legend component
+  const MapLegend = () => (
+    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 z-[1000] max-w-xs">
+      <h4 className="font-semibold text-sm mb-2">Journey Routes</h4>
+      <div className="space-y-1.5 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-0.5 bg-gray-800" style={{ borderBottom: '2px dotted #333' }} />
+          <span>Walking</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-1 bg-red-600" style={{ borderBottom: '2px dashed #DC241F' }} />
+          <span>Bus</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-1 bg-blue-600" />
+          <span>Tube/Rail</span>
+        </div>
+        <div className="text-gray-500 mt-2 pt-2 border-t">
+          Lines shown in actual TfL colors
+        </div>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="w-full h-[500px] rounded-xl overflow-hidden border border-purple-100">
+    <div className="w-full h-[500px] rounded-xl overflow-hidden border border-purple-100 relative">
       <MapContainer
         center={mapCenter}
         zoom={12}
@@ -282,37 +365,106 @@ export function MeetingMap({ result }: MeetingMapProps) {
           </Popup>
         </Marker>
 
-        {/* Individual location markers and routes */}
-        {routes.map((route, index) => (
-          <React.Fragment key={index}>
-            {/* Route line */}
-            <Polyline
-              positions={generateRoutePoints(route.from, route.to)}
-              color={route.color}
-              weight={3}
-              opacity={0.7}
-              dashArray="10, 10"
-            />
+        {/* Individual location markers and detailed journey routes */}
+        {journeyRoutes.map((journey, journeyIndex) => (
+          <React.Fragment key={journeyIndex}>
+            {/* Draw each leg of the journey */}
+            {journey.legs.length > 0 ? (
+              journey.legs.map((leg, legIndex) => {
+                if (!leg.from_coords || !leg.to_coords) return null
+                
+                // Get ONE color for this ENTIRE leg
+                const lineColor = getLineColor(leg.mode, leg.line_name)
+                const lineStyle = getLineStyle(leg.mode)
+                
+                // Debug logging
+                console.log(`Journey ${journeyIndex}, Leg ${legIndex}:`, {
+                  mode: leg.mode,
+                  line_name: leg.line_name,
+                  calculated_color: lineColor,
+                  from: leg.from_name,
+                  to: leg.to_name
+                })
+                
+                // Build the complete path including intermediate stops
+                const legPath: [number, number][] = [
+                  leg.from_coords as [number, number]
+                ]
+                
+                // Add intermediate stops if they exist
+                if (leg.intermediate_stops && leg.intermediate_stops.length > 0) {
+                  leg.intermediate_stops.forEach(stop => {
+                    legPath.push(stop as [number, number])
+                  })
+                }
+                
+                // Add the final destination
+                legPath.push(leg.to_coords as [number, number])
+                
+                return (
+                  <React.Fragment key={`${journeyIndex}-${legIndex}`}>
+                    {/* Route line for this leg */}
+                    <Polyline
+                      positions={legPath}
+                      color={lineColor}
+                      weight={lineStyle.weight}
+                      opacity={lineStyle.opacity}
+                      dashArray={lineStyle.dashArray}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <p className="font-semibold">{leg.instruction || `${leg.mode} leg`}</p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {leg.from_name} → {leg.to_name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {leg.duration} min • {leg.stops ? `${leg.stops} stops` : ''}
+                          </p>
+                        </div>
+                      </Popup>
+                    </Polyline>
+                    
+                    {/* No station markers - just the lines show the routes */}
+                  </React.Fragment>
+                )
+              })
+            ) : (
+              // Fallback to simple line if no detailed legs available
+              <Polyline
+                positions={[[journey.from[0], journey.from[1]], [journey.to[0], journey.to[1]]]}
+                color={journey.personColor}
+                weight={3}
+                opacity={0.5}
+                dashArray="10, 10"
+              />
+            )}
             
             {/* Starting point marker */}
             <Marker 
-              position={route.from} 
-              icon={createPersonIcon(route.color, getInitials(route.name))}
+              position={journey.from} 
+              icon={createPersonIcon(journey.personColor, getInitials(journey.name))}
             >
               <Popup>
                 <div className="text-center">
-                  <h4 className="font-semibold" style={{ color: route.color }}>
-                    {route.name}
+                  <h4 className="font-semibold" style={{ color: journey.personColor }}>
+                    {journey.name}
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Journey time: {route.journeyTime} min
-                  </p>
+                  <div className="text-sm text-gray-600 mt-2 space-y-1">
+                    <p>Total time: {journey.journeyTime} min</p>
+                    {journey.totalWalking > 0 && (
+                      <p>Walking: {journey.totalWalking} min</p>
+                    )}
+                    {journey.transfers > 0 && (
+                      <p>Changes: {journey.transfers}</p>
+                    )}
+                  </div>
                 </div>
               </Popup>
             </Marker>
           </React.Fragment>
         ))}
       </MapContainer>
+      <MapLegend />
     </div>
   )
 }
