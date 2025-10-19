@@ -57,28 +57,36 @@ const getInitials = (name: string) => {
 }
 
 const meetingPointIcon = L.divIcon({
-  className: 'custom-div-icon',
+  className: 'custom-div-icon meeting-point-animated',
   html: `
-    <div style="
-      background: linear-gradient(135deg, #a855f7, #3b82f6);
+    <div class="meeting-point-marker" style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 4px solid white;
-      box-shadow: 0 8px 16px rgba(168, 85, 247, 0.4);
       position: relative;
+      animation: bounce 2s ease-in-out infinite;
     ">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" fill="white"/>
-        <circle cx="12" cy="10" r="3" fill="#a855f7"/>
+      <svg width="40" height="48" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="
+        filter: drop-shadow(0 8px 16px rgba(168, 85, 247, 0.4));
+        animation: pulse 2s ease-in-out infinite;
+      ">
+        <defs>
+          <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <path d="M20 0C8.95 0 0 8.95 0 20C0 35 20 48 20 48C20 48 40 35 40 20C40 8.95 31.05 0 20 0Z" fill="url(#pinGradient)"/>
+        <path d="M20 0C8.95 0 0 8.95 0 20C0 35 20 48 20 48C20 48 40 35 40 20C40 8.95 31.05 0 20 0Z" fill="url(#pinGradient)" stroke="white" stroke-width="2"/>
+        <circle cx="20" cy="20" r="8" fill="white"/>
+        <circle cx="20" cy="20" r="4" fill="url(#pinGradient)"/>
       </svg>
-      <div style="
+      <div class="star-badge" style="
         position: absolute;
-        top: -8px;
-        right: -8px;
+        top: -4px;
+        right: -4px;
         background: #f97316;
         color: white;
         width: 20px;
@@ -90,7 +98,19 @@ const meetingPointIcon = L.divIcon({
         font-size: 10px;
         font-weight: bold;
         border: 2px solid white;
+        animation: rotate 3s linear infinite;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       ">★</div>
+      <div class="pulse-ring" style="
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid rgba(168, 85, 247, 0.8);
+        animation: pulse-ring 2s ease-out infinite;
+        top: 0;
+        left: 4px;
+      "></div>
     </div>
   `,
   iconSize: [48, 48],
@@ -298,6 +318,61 @@ export function MeetingMap({ result }: MeetingMapProps) {
         .leaflet-popup-content {
           margin: 12px;
           font-size: 14px;
+        }
+        
+        /* Animations for the meeting point marker */
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+          }
+          50% {
+            transform: translateY(-10px) scale(1.05);
+          }
+        }
+        
+        @keyframes pulse {
+          0% {
+            filter: drop-shadow(0 8px 16px rgba(168, 85, 247, 0.4));
+          }
+          50% {
+            filter: drop-shadow(0 8px 20px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.4));
+          }
+          100% {
+            filter: drop-shadow(0 8px 16px rgba(168, 85, 247, 0.4));
+          }
+        }
+        
+        @keyframes rotate {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+        
+        /* Make the meeting point marker container allow overflow for animations */
+        .meeting-point-animated {
+          z-index: 1000 !important;
+          overflow: visible !important;
+        }
+        
+        /* Hover effect for extra emphasis */
+        .meeting-point-marker:hover {
+          animation-play-state: paused;
+          transform: scale(1.1) !important;
+          transition: transform 0.3s ease;
         }
       `
       document.head.appendChild(style)
