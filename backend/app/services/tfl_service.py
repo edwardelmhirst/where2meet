@@ -80,19 +80,34 @@ class TfLService:
                         intermediate_stops = []
                         
                         # For tube/bus legs, use the lineString coordinates (smoothed path)
-                        # We'll sample every few points to avoid too many markers
                         if leg.get('path') and leg.get('path', {}).get('lineString'):
                             line_string = leg['path']['lineString']
-                            # Parse lineString which is in format "[[lng,lat],[lng,lat],...]"
+                            # Parse lineString which is in format "[[lat,lon],[lat,lon],...]"
                             import json
                             try:
                                 coords = json.loads(line_string)
-                                # Sample every 3rd point to avoid overcrowding, skip first and last
-                                for i in range(1, len(coords) - 1, 3):
+                                
+                                # For tube lines, heavily sample to avoid zigzag patterns
+                                # For other modes, moderate sampling
+                                if mode.lower() in ['tube', 'underground']:
+                                    # For tube, take fewer points to avoid platform zigzags
+                                    # Sample every 10th point for tube lines
+                                    step = max(10, len(coords) // 10)
+                                else:
+                                    # For walking/bus, more detailed path
+                                    step = max(3, len(coords) // 20)
+                                
+                                # Sample points, skip first and last
+                                for i in range(step, len(coords) - 1, step):
                                     if len(coords[i]) >= 2:
-                                        # lineString format is actually [[lat,lon],[lat,lon],...] 
-                                        # So coords[i][0] is latitude, coords[i][1] is longitude
+                                        # lineString format is [[lat,lon],[lat,lon],...] 
                                         intermediate_stops.append((coords[i][0], coords[i][1]))
+                                
+                                # Limit to reasonable number of points
+                                if len(intermediate_stops) > 10:
+                                    # Keep every Nth point to get down to 10
+                                    n = len(intermediate_stops) // 10 + 1
+                                    intermediate_stops = intermediate_stops[::n]
                             except:
                                 pass
                         
