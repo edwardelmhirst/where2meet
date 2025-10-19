@@ -95,6 +95,34 @@ make docker-dev
 make docker-logs
 ```
 
+### Important: Applying Code Changes
+
+When making changes to the backend code while using Docker:
+
+1. **For most Python code changes** (in `/app` directory):
+   - Changes should be reflected automatically due to volume mounting and hot reload
+   - If changes don't appear, restart the container: `docker-compose restart`
+
+2. **For schema/model changes** or **structural changes**:
+   - You MUST rebuild the Docker container:
+   ```bash
+   docker-compose down && docker-compose up --build -d
+   # Or using make:
+   make docker-down && make docker-build && make docker-up
+   ```
+
+3. **For dependency changes** (requirements.txt):
+   - Always rebuild the container:
+   ```bash
+   docker-compose build --no-cache && docker-compose up -d
+   ```
+
+**Quick rebuild command for any changes:**
+```bash
+# This ensures all changes are picked up
+docker-compose down && docker-compose up --build -d
+```
+
 ## Available Make Commands
 
 Run `make help` to see all available commands:
