@@ -234,7 +234,7 @@ class MeetingCalculator:
         results.sort(key=lambda x: (x.max_journey_time, fairness_order.get(x.fairness_score, 5), x.average_journey_time))
         
         optimal = results[0] if results else None
-        alternatives = results[1:6] if len(results) > 1 else []
+        alternatives = results[1:4] if len(results) > 1 else []  # Only return top 3 alternatives
         
         return optimal, alternatives
     
