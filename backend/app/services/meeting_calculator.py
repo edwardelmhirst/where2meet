@@ -87,8 +87,8 @@ class MeetingCalculator:
                 'max_distance': max_distance
             })
         
-        # Sort by average distance and take top 7 candidates
-        candidates.sort(key=lambda x: x['avg_distance'])
+        # Sort by maximum distance first (fairness priority), then by average distance
+        candidates.sort(key=lambda x: (x['max_distance'], x['avg_distance']))
         top_candidates = candidates[:7]
         
         if use_tfl_api:
@@ -146,18 +146,18 @@ class MeetingCalculator:
                 avg_time = total_time / len(locations) if locations else 0
                 min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
                 
-                # Calculate fairness score based on the spread of journey times
-                # Lower spread = more fair
+                # Calculate fairness score based on maximum journey time and spread
+                # Lower max time and spread = more fair
                 time_spread = max_time - min_time
                 
-                # Convert to a discrete text rating where lower spread is better
-                if time_spread <= 5:
+                # Convert to a discrete text rating prioritizing max time and spread
+                if max_time <= 20 and time_spread <= 5:
                     fairness_score = "Very Fair"
-                elif time_spread <= 10:
+                elif max_time <= 30 and time_spread <= 10:
                     fairness_score = "Fair"
-                elif time_spread <= 15:
+                elif max_time <= 40 and time_spread <= 15:
                     fairness_score = "Moderate"
-                elif time_spread <= 20:
+                elif max_time <= 50 and time_spread <= 20:
                     fairness_score = "Somewhat Unfair"
                 else:
                     fairness_score = "Unfair"
@@ -201,18 +201,18 @@ class MeetingCalculator:
                 avg_time = total_time / len(locations) if locations else 0
                 min_time = min([jt.duration_minutes for jt in journey_times]) if journey_times else 0
                 
-                # Calculate fairness score based on the spread of journey times
-                # Lower spread = more fair
+                # Calculate fairness score based on maximum journey time and spread
+                # Lower max time and spread = more fair
                 time_spread = max_time - min_time
                 
-                # Convert to a discrete text rating where lower spread is better
-                if time_spread <= 5:
+                # Convert to a discrete text rating prioritizing max time and spread
+                if max_time <= 20 and time_spread <= 5:
                     fairness_score = "Very Fair"
-                elif time_spread <= 10:
+                elif max_time <= 30 and time_spread <= 10:
                     fairness_score = "Fair"
-                elif time_spread <= 15:
+                elif max_time <= 40 and time_spread <= 15:
                     fairness_score = "Moderate"
-                elif time_spread <= 20:
+                elif max_time <= 50 and time_spread <= 20:
                     fairness_score = "Somewhat Unfair"
                 else:
                     fairness_score = "Unfair"
@@ -229,9 +229,9 @@ class MeetingCalculator:
                 )
                 results.append(station)
         
-        # Sort by average journey time first, then by fairness (using a priority order)
+        # Sort by maximum journey time first (fairness priority), then by average time
         fairness_order = {"Very Fair": 0, "Fair": 1, "Moderate": 2, "Somewhat Unfair": 3, "Unfair": 4}
-        results.sort(key=lambda x: (x.average_journey_time, fairness_order.get(x.fairness_score, 5)))
+        results.sort(key=lambda x: (x.max_journey_time, fairness_order.get(x.fairness_score, 5), x.average_journey_time))
         
         optimal = results[0] if results else None
         alternatives = results[1:6] if len(results) > 1 else []
